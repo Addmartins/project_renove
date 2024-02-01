@@ -3,7 +3,7 @@ CREATE TABLE clients (
     cnpj varchar(18) not null,
     nome_client text not null,
     senha text not null,
-    email text,
+    email text unique,
     location_id integer references location(id) not null,
     gerente_id integer references gerentes(id) not null
 );

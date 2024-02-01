@@ -1,6 +1,6 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const {knex} = require("../connection")
+const knex = require("../connection")
 
 
 const verificarLogin = async (req, res, next) => {

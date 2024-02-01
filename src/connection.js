@@ -1,4 +1,4 @@
-const knex = require('knex')({
+const knex = require("knex")({
     client:"pg",
     connection: {
         host: "localhost",
@@ -9,6 +9,4 @@ const knex = require('knex')({
     }
 })
 
-module.exports = {
-    knex
-}
+module.exports = knex;

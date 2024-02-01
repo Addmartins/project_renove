@@ -1,7 +1,7 @@
 const express = require('express')
 const { cadastroClient, loginClient, getClient, updateClient } = require('./controllers/client/client');
 const verificarLogin = require('./cryptografia/jwt');
-const { newRequest } = require('./controllers/requests/requets');
+const { newRequest, getRequest } = require('./controllers/requests/requets');
 // const verificarLogin = require('./filter/verificarLogin');
 
 const rotas = express.Router();
@@ -24,6 +24,8 @@ rotas.put('/client', updateClient);
 
 //Requests
 rotas.post('/request', newRequest);
+rotas.get('/request', getRequest);
+
 
 
 
