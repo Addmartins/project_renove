@@ -1,4 +1,5 @@
 require('dotenv').config();
+const query_client = require("../../querys/clientQuerys")
 const knex = require("../../connection");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -15,15 +16,28 @@ const cadastroClient = async (req, res) => {
 
         const senhaCryptografada = await bcrypt.hash(senha, 10);
 
-        //Persistir dados do gerente no database
-        const gerente = await knex('gerentes').insert({
-            nome,
-            cpf,
-            email: email_gerente,
-            telefone
-        }).returning('id');
+        //validar se o gerente ja existe
 
-        const gerente_id = gerente[0].id;
+        const gerente_existente = await knex('gerentes').where({ cpf }).first();
+
+
+        let gerente_id = null;
+
+        if (!gerente_existente) {
+            //Persistir dados do gerente no database
+            const gerente = await knex('gerentes').insert({
+                nome,
+                cpf,
+                email: email_gerente,
+                telefone
+            }).returning('id');
+
+            gerente_id = gerente[0].id;
+
+        } else {
+            gerente_id = gerente_existente.id;
+        }
+
 
         //Persistir dados da localização no database
         const location = await knex('location').insert(
@@ -37,6 +51,14 @@ const cadastroClient = async (req, res) => {
         ).returning('id');
 
         const location_id = location[0].id;
+
+        const client_existe = await query_client.validar_email(email);
+
+        if (client_existe) {
+            return res.status(404).json({
+                mensagem: "Email ja cadastrado."
+            })
+        }
 
         //Persistir dados da empresa no database
         const newClient = await knex('clients').insert(
@@ -53,6 +75,8 @@ const cadastroClient = async (req, res) => {
         return res.status(201).json(newClient)
 
     } catch (error) {
+
+        console.log(error)
 
         return res.status(500).json({
             error: "Erro interno"
@@ -135,7 +159,7 @@ const updateClient = async (req, res) => {
             const { cep, rua, cidade, estado, numero } = location;
 
             await knex("location")
-                .where({ location_id })
+                .where({ id: location_id })
                 .update({
                     cep,
                     rua,
@@ -152,7 +176,7 @@ const updateClient = async (req, res) => {
             const { nome, cpf, email_gerente, telefone } = gerente;
 
             await knex("gerentes")
-                .where({ gerente_id })
+                .where({ id: gerente_id })
                 .update({
                     nome,
                     cpf,
@@ -170,19 +194,20 @@ const updateClient = async (req, res) => {
             }).returning("*");
 
 
-            if(!update_client) {
-                return res.status(501).json({
-                    mensagem: "Falha ao atualizar dados."
-                })
-            }
+        if (!update_client) {
+            return res.status(501).json({
+                mensagem: "Falha ao atualizar dados."
+            })
+        }
 
 
-        const { senha: _, ...clientUpdate } = update_client;
+        const { senha: __, ...clietUpdate } = update_client[0];
 
-        return res.status(200).json({ clientUpdate })
+        return res.status(200).json({ clietUpdate })
 
 
     } catch (error) {
+        console.log(error)
         return res.status(501).json({
             mensagem: "Falha ao atualizar dados."
         })
@@ -192,7 +217,38 @@ const updateClient = async (req, res) => {
 }
 
 const deleteClient = async (req, res) => {
-    
+
+    const { id, location_id, gerente_id } = req.client;
+
+    try {
+
+        const gerente_qtd = await knex('clients')
+            .select("*")
+            .where({
+                gerente_id
+            });
+
+        await knex("requests").where({ client_id: id }).delete();
+
+        await knex("clients").where({ id }).delete()
+
+        if (gerente_qtd.length == 1) {
+            await knex("gerentes")
+                .where({ id: gerente_id })
+                .delete()
+        }
+
+
+        await knex("location").where({ id: location_id }).delete();
+
+
+    } catch (error) {
+        console.log(error)
+        return res.status(501).json({
+            mensagem: "Error interno."
+        })
+    }
+
 }
 
 
@@ -200,5 +256,6 @@ module.exports = {
     cadastroClient,
     loginClient,
     getClient,
-    updateClient
+    updateClient,
+    deleteClient
 }

@@ -1,7 +1,7 @@
 CREATE TABLE clients (
     id serial primary key,
-    cnpj varchar(18) not null,
-    nome_client text not null,
+    cnpj varchar(18) not null unique,
+    nome_client text not null  unique,
     senha text not null,
     email text unique,
     location_id integer references location(id) not null,
@@ -11,7 +11,7 @@ CREATE TABLE clients (
 CREATE TABLE gerentes (
     id serial primary key,
     nome text not null,
-    cpf varchar(14) not null unique,
+    cpf varchar(14) not null,
     email text,
     telefone varchar(11)
 );
